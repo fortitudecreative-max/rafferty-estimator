@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<title>Rafferty Field Estimator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#E9EAE5;--surface:#FAFAF8;--surface-2:#F1F2ED;--ink:#14161A;--ink-2:#5C625F;--ink-3:#868C86;
+  --line:#C9CCC4;--line-2:#DDDFD8;--accent:#E5A522;--accent-deep:#C4881A;--accent-ink:#1A1408;
+  --good:#2F6B4F;--warn:#9C6510;--bad:#A63328;--field:#FFFFFF;
+  --shadow:0 1px 2px rgba(20,22,26,.06),0 8px 24px -16px rgba(20,22,26,.28);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#131517;--surface:#1B1E20;--surface-2:#222628;--ink:#E9EAE5;--ink-2:#9BA19B;--ink-3:#767C77;
+  --line:#333A38;--line-2:#2A2F2E;--accent:#F0B429;--accent-deep:#F0B429;--accent-ink:#17130A;
+  --good:#63A883;--warn:#D9A24A;--bad:#D9705F;--field:#101314;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  --bg:#131517;--surface:#1B1E20;--surface-2:#222628;--ink:#E9EAE5;--ink-2:#9BA19B;--ink-3:#767C77;
+  --line:#333A38;--line-2:#2A2F2E;--accent:#F0B429;--accent-deep:#F0B429;--accent-ink:#17130A;
+  --good:#63A883;--warn:#D9A24A;--bad:#D9705F;--field:#101314;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:Archivo,system-ui,sans-serif;margin:0;text-wrap:balance}
+input,button,select,textarea{font:inherit;color:inherit}
+
+.mast{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:1px solid var(--line)}
+.mast-in{max-width:1180px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;gap:14px}
+.mark{display:flex;flex-direction:column;gap:1px;margin-right:auto;min-width:0}
+.mark h1{font-size:16px;font-weight:800;letter-spacing:-.015em;line-height:1.1}
+.mark .amp{color:var(--accent-deep)}
+.mark .sub{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3)}
+.newjob{font-family:Archivo;font-size:12.5px;font-weight:600;padding:8px 13px;min-height:40px;cursor:pointer;background:transparent;border:1px solid var(--ink-2);color:var(--ink);border-radius:0}
+.newjob:hover{background:var(--ink);color:var(--surface)}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 190px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 366px;gap:30px;align-items:start}
+@media(max-width:1000px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+.intro{padding:26px 0 6px;max-width:60ch}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-deep);display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+.intro h2{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.14;margin-bottom:11px}
+.intro p{color:var(--ink-2);margin:0 0 10px}
+.intro strong{color:var(--ink);font-weight:600}
+
+.card{margin-top:22px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.ch{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+.cno{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;background:var(--accent);color:var(--accent-ink);width:25px;height:25px;flex:none;display:grid;place-items:center}
+.ch h3{font-size:16px;font-weight:700}
+.ch .tail{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-3);letter-spacing:.04em}
+.cb{padding:15px 16px;display:flex;flex-direction:column;gap:14px}
+
+label.lb{display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-bottom:5px}
+.txt{width:100%;padding:10px 12px;background:var(--field);border:1px solid var(--line);border-radius:0;outline:none;font-size:16px;min-height:46px}
+.txt:focus{border-color:var(--accent-deep);box-shadow:0 0 0 2px rgba(229,165,34,.22)}
+.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.hint{font-size:12.5px;color:var(--ink-3);margin-top:6px;line-height:1.45}
+.hint b{color:var(--ink-2);font-weight:600}
+
+.seg{display:flex;border:1px solid var(--line);background:var(--field)}
+.seg button{flex:1;padding:11px 4px;min-height:46px;font-size:13px;font-weight:600;background:transparent;border:0;border-right:1px solid var(--line);color:var(--ink-2);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button:focus-visible{outline:2px solid var(--accent-deep);outline-offset:-2px}
+.seg.two button{font-size:12.5px}
+
+.area{border:1px solid var(--line);background:var(--surface-2)}
+.area-h{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}
+.area-h .nm{font-weight:600;font-size:14px;flex:1;min-width:0}
+.area-h .sz{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.rm{background:transparent;border:1px solid var(--line);color:var(--ink-3);width:32px;height:32px;flex:none;cursor:pointer;font-size:16px;line-height:1;border-radius:0}
+.rm:hover{border-color:var(--bad);color:var(--bad)}
+.area-b{padding:12px;display:flex;flex-direction:column;gap:11px}
+.dims{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+@media(max-width:520px){.dims{grid-template-columns:1fr 1fr}}
+.addarea{border:1px dashed var(--line-2);background:transparent;color:var(--ink-2);padding:13px;min-height:48px;width:100%;cursor:pointer;font-weight:600;font-size:14px;border-radius:0}
+.addarea:hover{border-color:var(--accent-deep);color:var(--ink)}
+
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.pairs{grid-template-columns:1fr}}
+.addons{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.addons{grid-template-columns:1fr}}
+
+/* ---- result rail ---- */
+.rail{position:sticky;top:70px}
+.res{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--accent);box-shadow:var(--shadow)}
+.res-top{padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+.res-top .t{font-family:Archivo;font-size:15px;font-weight:700}
+.res-top .s{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.res-b{padding:14px 16px}
+.ln{display:flex;justify-content:space-between;gap:10px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;padding:3px 0;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.ln b{color:var(--ink);font-weight:500}
+.ln.tot{margin-top:8px;padding-top:9px;border-top:1px solid var(--line);font-size:13px;color:var(--ink)}
+.big{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:12px;padding:12px 14px;background:var(--surface-2);border:1px solid var(--line)}
+.big .k{font-family:Archivo;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.big .v{font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.sub2{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);margin-top:6px}
+.marg{display:flex;align-items:center;gap:8px;margin-top:8px}
+.marg button{flex:0 0 44px;height:40px;background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;border-radius:0}
+.marg button:hover{border-color:var(--accent-deep)}
+.marg button.rs{flex:0 0 auto;padding:0 10px;font-size:11.5px;font-family:"IBM Plex Mono",monospace}
+.marg span{flex:1;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-2)}
+.marg span b{color:var(--ink);font-weight:600}
+.bench{display:flex;justify-content:space-between;gap:10px;margin-top:11px;padding:9px 12px;background:var(--surface-2);border:1px solid var(--line);font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.bench b{color:var(--ink);font-weight:600}
+.flag{margin-top:9px;padding:9px 11px;font-size:12.5px;line-height:1.45;border-left:3px solid var(--warn);background:var(--surface-2);color:var(--ink-2)}
+.flag.bad{border-left-color:var(--bad)}
+.flag.good{border-left-color:var(--good)}
+.flag b{color:var(--ink);font-weight:600}
+.peek{display:none}
+
+@media(max-width:1000px){
+  .rail{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:50}
+  .res{border-left:0;border-right:0;border-bottom:0;max-height:74vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom)}
+  .res-top{cursor:pointer;display:flex;align-items:center;gap:12px;min-height:56px;padding-bottom:calc(11px + env(safe-area-inset-bottom))}
+  .res-top .txtw{flex:1;min-width:0}
+  .caret{font-family:"IBM Plex Mono",monospace;font-size:15px;color:var(--ink-3)}
+  .peek{display:flex;gap:12px;align-items:baseline;font-family:"IBM Plex Mono",monospace;font-size:14px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+  .peek .m{font-size:11.5px;font-weight:500;color:var(--ink-3)}
+  .rail.typing{display:none}
+}
+@media(min-width:1001px){.caret{display:none}}
+
+/* ---- verdict ---- */
+.vb{margin-top:22px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.note{border:1px solid var(--accent-deep);border-left-width:4px;background:var(--surface-2);padding:12px 14px;margin-bottom:15px}
+.note b{display:block;font-size:14px;color:var(--ink);margin-bottom:2px}
+.note span{font-size:13.5px;color:var(--ink-2)}
+.ta{width:100%;min-height:72px;padding:10px 12px;background:var(--field);border:1px solid var(--line);border-radius:0;font-size:16px;outline:none;resize:vertical}
+.ta:focus{border-color:var(--accent-deep)}
+.btn{font-family:Archivo;font-size:15px;font-weight:600;padding:14px 22px;min-height:52px;cursor:pointer;background:var(--accent);border:1px solid var(--accent-deep);color:var(--accent-ink);border-radius:0;width:100%}
+.btn:hover{background:var(--accent-deep)}
+.btn:disabled{opacity:.55;cursor:default}
+.msg{margin-top:12px;padding:13px 15px;font-size:14px;line-height:1.5;border-left:4px solid var(--good);background:var(--surface-2)}
+.msg.err{border-left-color:var(--bad)}
+.msg b{display:block;margin-bottom:2px}
+.foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="mast-in">
+    <div class="mark">
+      <h1>Rafferty <span class="amp">Paving</span></h1>
+      <span class="sub">Field Estimator · test build</span>
+    </div>
+    <button class="newjob" id="newjob">New job</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <main>
+      <section class="intro">
+        <div class="eyebrow">Built on your numbers</div>
+        <h2>Price a real job. Then tell us what you'd have charged.</h2>
+        <p>Every rate in here came from the sheet you filled in. Asphalt at <strong>$105/ton</strong>, crew at <strong>$331.50/hr</strong>, trucks at <strong>$150/hr</strong>, your <strong>$5,000</strong> minimum.</p>
+        <p>Run a job you've already quoted, or one you're standing on right now. The price appears as you type. Then at the bottom, tell us what you'd actually charge. <strong>That's the whole point of this build</strong> — we need to know how far off it is before anyone writes the real app.</p>
+        <p><strong>Updated from your two jobs on 3 September.</strong> You told us that 18,000 sq ft overlay is about two crew days, so the timings were right after all. What was off is the margin: we had 28% baked in for everything, and your own $3.25 a square foot works out a lot richer than that on a big job. So the margin is now yours to move, and your usual rate shows next to ours.</p>
+      </section>
+
+      <section class="card">
+        <div class="ch"><span class="cno">1</span><h3>The job</h3><span class="tail">so we can match it up later</span></div>
+        <div class="cb">
+          <div>
+            <label class="lb" for="joblabel">Job name or address</label>
+            <input class="txt" id="joblabel" placeholder="e.g. Hollow Creek Rd driveway">
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="ch"><span class="cno">2</span><h3>Areas</h3><span class="tail" id="totalsf">0 sq ft</span></div>
+        <div class="cb">
+          <div id="areas" style="display:flex;flex-direction:column;gap:12px"></div>
+          <button class="addarea" id="addarea">+ Add another area</button>
+          <div>
+            <label class="lb" for="hours">Crew hours · how long will this really take?</label>
+            <input class="txt num" id="hours" type="number" inputmode="decimal" min="0" step="0.5" placeholder="leave blank to work it out">
+            <div class="hint" id="hourshint"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="ch"><span class="cno">3</span><h3>Site conditions</h3><span class="tail">these multiply the whole cost</span></div>
+        <div class="cb">
+          <div class="pairs">
+            <div><label class="lb">Access</label><div class="seg" data-k="access">
+              <button type="button" data-v="1">Easy</button><button type="button" data-v="1.1">Moderate</button><button type="button" data-v="1.25">Difficult</button></div></div>
+            <div><label class="lb">Slope</label><div class="seg" data-k="slope">
+              <button type="button" data-v="1">Flat</button><button type="button" data-v="1.08">Moderate</button><button type="button" data-v="1.2">Steep</button></div></div>
+            <div><label class="lb">Surface condition</label><div class="seg" data-k="surface">
+              <button type="button" data-v="1">Good</button><button type="button" data-v="1.1">Fair</button><button type="button" data-v="1.22">Poor</button></div></div>
+            <div><label class="lb">Layout</label><div class="seg two" data-k="complex">
+              <button type="button" data-v="1">Standard</button><button type="button" data-v="1.15">Complex</button></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="ch"><span class="cno">4</span><h3>Prep add-ons</h3><span class="tail">leave at 0 if not doing it</span></div>
+        <div class="cb">
+          <div class="addons">
+            <div><label class="lb" for="crack">Crack sealing · lin ft</label><input class="txt num" id="crack" type="number" inputmode="decimal" min="0" step="10" value="0"></div>
+            <div><label class="lb" for="baserep">Base repair · sq ft</label><input class="txt num" id="baserep" type="number" inputmode="decimal" min="0" step="10" value="0"></div>
+            <div><label class="lb" for="drain">Drainage · lin ft</label><input class="txt num" id="drain" type="number" inputmode="decimal" min="0" step="5" value="0"></div>
+            <div><label class="lb" for="stripe">Striping · lin ft</label><input class="txt num" id="stripe" type="number" inputmode="decimal" min="0" step="25" value="0"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="vb">
+        <div class="ch"><span class="cno">5</span><h3>How did we do?</h3><span class="tail">the part that matters</span></div>
+        <div class="cb">
+          <div class="note">
+            <b>Don't correct it. Just tell us what you'd charge.</b>
+            <span>If the number above is wrong, that's useful — more useful than it being right. We fix the rates from what you tell us here.</span>
+          </div>
+          <div>
+            <label class="lb" for="charge">What you'd actually charge · $</label>
+            <input class="txt num" id="charge" type="number" inputmode="decimal" min="0" step="50" placeholder="9500">
+            <div class="hint" id="gaphint"></div>
+          </div>
+          <div>
+            <label class="lb" for="vnotes">What did we miss?</label>
+            <textarea class="ta" id="vnotes" placeholder="e.g. this one needed two days, or the haul was twice as far, or I'd never quote this low in July."></textarea>
+          </div>
+          <div>
+            <label class="lb" for="who">Your name</label>
+            <input class="txt" id="who" autocomplete="name" placeholder="John Rafferty">
+          </div>
+          <button class="btn" id="send">Send this job to Jason</button>
+          <div class="msg" id="msg" hidden></div>
+        </div>
+      </section>
+
+      <div class="foot">
+        <span>Rafferty Paving · field estimator · test build</span>
+        <span>Rates confirmed 09/03/26</span>
+      </div>
+    </main>
+
+    <aside class="rail" id="rail">
+      <div class="res">
+        <div class="res-top" id="restop">
+          <div class="txtw">
+            <div class="t">Your price</div>
+            <div class="s">Updates as you type.</div>
+            <div class="peek" id="peek"></div>
+          </div>
+          <span class="caret" id="caret">▲</span>
+        </div>
+        <div class="res-b" id="resbody"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* Rates below are John Rafferty's own, from the cost intake sheet he
+   returned 3 Sept 2026. Nothing here is a Fortitude guess except the
+   four site multipliers and the prep add-on rates, which he confirmed
+   without changing. */
+const R = {
+  hmaCost:105, hmaDens:145, waste:8,
+  tackCost:3.40, tackRate:0.07,
+  emulCost:3.65, emulRate:0.40,
+  aggWhite:55, aggBlack:105, aggRate:22,
+  crewCost:331.50, asphaltDay:500,
+  /* 1400 sf/hr -> 12.9 hr -> 2 crew days on 18,000 sf, which John confirmed
+     directly. The gap on his big overlay is NOT time; it is margin. */
+  prodOverlay:1400, prodChip:4000, minHours:8,
+  /* His own rules of thumb, straight off the two jobs he ran:
+     $58,500/18,000sf = $3.25 asphalt · $29,700/18,000sf = $1.65 chip seal */
+  sfBenchOverlay:3.25, sfBenchChip:1.65,
+  equipDay:650, mobFee:350,
+  truckCap:22, truckHrs:1.5, truckRate:150,
+  plantMin:8, shortFee:300,
+  crackLf:2.25, baseSf:7.50, drainLf:32, stripeLf:0.85,
+  jobMin:5000, target:28, floor:15, deposit:25
+};
+
+const ENDPOINT = "https://gqumrwluiyozsdepifxj.supabase.co/functions/v1/rafferty-intake";
+const STORE = "rafferty-estimator-v1";
+
+let state = null;
+function blankArea(n){
+  return {id:Math.random().toString(36).slice(2,9), name:"Area "+n, mode:"lw",
+          len:"", wid:"", sf:"", treat:"overlay", thick:2, lifts:2, chip:"white"};
+}
+function blankState(){
+  return {label:"", areas:[blankArea(1)], access:1, slope:1, surface:1, complex:1,
+          crack:0, baserep:0, drain:0, stripe:0, hours:"", margin:28,
+          charge:"", vnotes:"", who:"", sent:false};
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE);
+    if(raw){ const p = JSON.parse(raw); if(p && Array.isArray(p.areas) && p.areas.length){ state = p; return; } }
+  }catch(e){}
+  state = blankState();
+}
+let t=null;
+function save(){ clearTimeout(t); t=setTimeout(()=>{ try{ localStorage.setItem(STORE, JSON.stringify(state)); }catch(e){} }, 350); }
+
+/* state must exist before any wiring below reads it */
+load();
+
+const money = n => "$" + Math.round(n).toLocaleString("en-US");
+const money2 = n => "$" + n.toFixed(2);
+const numv = v => { const n = parseFloat(v); return isNaN(n) || n < 0 ? 0 : n; };
+
+function areaSf(a){
+  return a.mode === "sf" ? numv(a.sf) : numv(a.len) * numv(a.wid);
+}
+
+/* ---------- the engine ---------- */
+function price(){
+  let hmaTons=0, hmaCost=0, tackCost=0, emulGal=0, emulCost=0, aggTons=0, aggCost=0;
+  let overlaySf=0, chipSf=0, anyAsphalt=false, totalSf=0;
+
+  state.areas.forEach(a=>{
+    const sf = areaSf(a); if(sf <= 0) return;
+    totalSf += sf;
+    const sy = sf/9;
+    if(a.treat === "overlay"){
+      overlaySf += sf; anyAsphalt = true;
+      const th = numv(a.thick) || 2;
+      const t = sf * (th/12) * R.hmaDens / 2000 * (1 + R.waste/100);
+      hmaTons += t; hmaCost += t * R.hmaCost;
+      tackCost += sy * R.tackRate * R.tackCost;
+    } else {
+      chipSf += sf;
+      const lifts = numv(a.lifts) || 2;
+      const g = sy * R.emulRate * lifts;
+      emulGal += g; emulCost += g * R.emulCost;
+      const at = sy * R.aggRate * lifts / 2000;
+      aggTons += at;
+      aggCost += at * (a.chip === "black" ? R.aggBlack : R.aggWhite);
+    }
+  });
+
+  const material = hmaCost + tackCost + emulCost + aggCost;
+
+  const rawHrs = (overlaySf / R.prodOverlay) + (chipSf / R.prodChip);
+  const autoHrs = Math.max(rawHrs, totalSf > 0 ? R.minHours : 0);
+  const ovHrs = numv(state.hours);
+  const hrs = ovHrs > 0 ? ovHrs : autoHrs;
+  const days = totalSf > 0 ? Math.max(1, Math.ceil(hrs / 8)) : 0;
+  const labor = hrs * R.crewCost + (anyAsphalt ? R.asphaltDay * days : 0);
+
+  const equip = totalSf > 0 ? days * R.equipDay + R.mobFee : 0;
+
+  const haulTons = hmaTons + aggTons;
+  const loads = haulTons > 0 ? Math.ceil(haulTons / R.truckCap) : 0;
+  let haul = loads * R.truckHrs * R.truckRate;
+  const shortLoad = anyAsphalt && hmaTons > 0 && hmaTons < R.plantMin;
+  if(shortLoad) haul += R.shortFee;
+
+  const addons = numv(state.crack)*R.crackLf + numv(state.baserep)*R.baseSf
+               + numv(state.drain)*R.drainLf + numv(state.stripe)*R.stripeLf;
+
+  const mult = state.access * state.slope * state.surface * state.complex;
+  const base = material + labor + equip + haul + addons;
+  const cost = base * mult;
+
+  const tgt = Math.min(Math.max(numv(state.margin) || R.target, 1), 80);
+  const p = cost / (1 - tgt/100);
+  const floorPrice = cost / (1 - R.floor/100);
+  const margin = p > 0 ? (p - cost) / p * 100 : 0;
+  const belowMin = totalSf > 0 && p < R.jobMin;
+
+  const bench = overlaySf * R.sfBenchOverlay + chipSf * R.sfBenchChip;
+
+  return {totalSf, hmaTons, aggTons, emulGal, hrs, rawHrs, autoHrs, ovHrs, bench, tgt,
+          days, loads, shortLoad,
+          material, labor, equip, haul, addons, mult, cost, price:p, floorPrice,
+          margin, belowMin, minHit: totalSf>0 && ovHrs<=0 && rawHrs < R.minHours};
+}
+
+/* ---------- render ---------- */
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function renderAreas(){
+  const host = document.getElementById("areas");
+  host.innerHTML = state.areas.map((a,i)=>{
+    const sf = areaSf(a);
+    return `<div class="area" data-id="${a.id}">
+      <div class="area-h">
+        <span class="nm">${esc(a.name)}</span>
+        <span class="sz">${sf ? Math.round(sf).toLocaleString() + " sq ft" : "—"}</span>
+        ${state.areas.length>1?`<button class="rm" data-rm="${a.id}" aria-label="Remove ${esc(a.name)}">×</button>`:""}
+      </div>
+      <div class="area-b">
+        <div class="seg two" data-area="${a.id}" data-f="mode">
+          <button type="button" data-v="lw" aria-pressed="${a.mode==="lw"}">Length × Width</button>
+          <button type="button" data-v="sf" aria-pressed="${a.mode==="sf"}">Total sq ft</button>
+        </div>
+        ${a.mode==="lw"
+          ? `<div class="dims">
+               <div><label class="lb">Length ft</label><input class="txt num" type="number" inputmode="decimal" min="0" step="1" data-area="${a.id}" data-f="len" value="${esc(a.len)}"></div>
+               <div><label class="lb">Width ft</label><input class="txt num" type="number" inputmode="decimal" min="0" step="1" data-area="${a.id}" data-f="wid" value="${esc(a.wid)}"></div>
+               <div><label class="lb">Area</label><input class="txt num" value="${sf?Math.round(sf).toLocaleString():""}" readonly tabindex="-1"></div>
+             </div>`
+          : `<div><label class="lb">Total square feet</label><input class="txt num" type="number" inputmode="decimal" min="0" step="10" data-area="${a.id}" data-f="sf" value="${esc(a.sf)}"></div>`}
+        <div class="seg two" data-area="${a.id}" data-f="treat">
+          <button type="button" data-v="overlay" aria-pressed="${a.treat==="overlay"}">Asphalt overlay</button>
+          <button type="button" data-v="chip" aria-pressed="${a.treat==="chip"}">Chip seal</button>
+        </div>
+        ${a.treat==="overlay"
+          ? `<div><label class="lb">Thickness · inches</label>
+               <div class="seg" data-area="${a.id}" data-f="thick">
+                 <button type="button" data-v="1.5" aria-pressed="${+a.thick===1.5}">1.5″</button>
+                 <button type="button" data-v="2" aria-pressed="${+a.thick===2}">2″</button>
+                 <button type="button" data-v="3" aria-pressed="${+a.thick===3}">3″</button>
+               </div></div>`
+          : `<div class="pairs">
+               <div><label class="lb">Lifts</label>
+                 <div class="seg two" data-area="${a.id}" data-f="lifts">
+                   <button type="button" data-v="1" aria-pressed="${+a.lifts===1}">Single</button>
+                   <button type="button" data-v="2" aria-pressed="${+a.lifts===2}">Double</button>
+                 </div></div>
+               <div><label class="lb">Chip colour</label>
+                 <div class="seg two" data-area="${a.id}" data-f="chip">
+                   <button type="button" data-v="white" aria-pressed="${a.chip==="white"}">White $55/t</button>
+                   <button type="button" data-v="black" aria-pressed="${a.chip==="black"}">Black $105/t</button>
+                 </div></div>
+             </div>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function benchDelta(r){
+  if(!r.bench || !r.price) return "";
+  const d = r.price - r.bench;
+  const pct = Math.abs(d / r.bench * 100);
+  if(pct < 3) return "in line";
+  return (d > 0 ? "we're " : "we're ") + pct.toFixed(0) + "% " + (d > 0 ? "over" : "under");
+}
+
+/* His own number is the verdict — no need to ask him twice. */
+function derivedVerdict(appPrice, charge){
+  if(!charge || !appPrice) return null;
+  const pct = (charge - appPrice) / appPrice * 100;
+  if(Math.abs(pct) < 5) return "close";
+  return pct > 0 ? "low" : "high";
+}
+
+function renderResult(){
+  const r = price();
+  document.getElementById("totalsf") .textContent = Math.round(r.totalSf).toLocaleString() + " sq ft";
+
+  if(r.totalSf <= 0){
+    document.getElementById("resbody").innerHTML =
+      `<div class="ln"><span>Add an area to see a price.</span></div>`;
+    document.getElementById("peek").innerHTML = `<span>—</span>`;
+    return r;
+  }
+
+  const rows = [];
+  if(r.material) rows.push(["Material", r.material]);
+  rows.push(["Labor · " + r.hrs.toFixed(1) + " hr", r.labor]);
+  rows.push(["Equipment · " + r.days + " day" + (r.days>1?"s":""), r.equip]);
+  if(r.haul) rows.push(["Haul · " + r.loads + " load" + (r.loads>1?"s":""), r.haul]);
+  if(r.addons) rows.push(["Prep add-ons", r.addons]);
+
+  const flags = [];
+  if(r.mult > 1.001) flags.push(`Site conditions add <b>${Math.round((r.mult-1)*100)}%</b> to everything above.`);
+  if(r.minHit) flags.push(`Real work is ${r.rawHrs.toFixed(1)} hr, billed at your <b>${R.minHours} hr</b> minimum.`);
+  if(r.shortLoad) flags.push(`Only ${r.hmaTons.toFixed(1)} t of asphalt — under the ${R.plantMin} t plant minimum, so a <b>${money(R.shortFee)}</b> short-load fee is in there.`);
+  const cls = r.belowMin ? "bad" : "good";
+  if(r.belowMin) flags.push(`<b>Under your ${money(R.jobMin)} minimum.</b> You said you don't roll out for less, so this one gets declined or repriced.`);
+
+  document.getElementById("resbody").innerHTML =
+    rows.map(([l,n])=>`<div class="ln"><span>${l}</span><b>${money(n)}</b></div>`).join("") +
+    `<div class="ln tot"><span>Your cost</span><b>${money(r.cost)}</b></div>
+     <div class="big"><span class="k">Price at ${r.tgt}%</span><span class="v">${money(r.price)}</span></div>
+     <div class="marg">
+       <button type="button" data-m="-1" aria-label="Lower margin">&minus;</button>
+       <span>margin <b>${r.tgt}%</b></span>
+       <button type="button" data-m="1" aria-label="Raise margin">+</button>
+       ${r.tgt!==R.target?`<button type="button" data-m="reset" class="rs">reset</button>`:""}
+     </div>
+     <div class="sub2"><span>${money2(r.price/r.totalSf)} / sq ft</span><span>margin ${r.margin.toFixed(1)}%</span></div>
+     <div class="sub2"><span>Won't go below (${R.floor}%)</span><span>${money(r.floorPrice)}</span></div>
+     <div class="sub2"><span>Deposit at ${R.deposit}%</span><span>${money(r.price*R.deposit/100)}</span></div>
+     <div class="bench"><span>Your usual rate lands at</span><b>${money(r.bench)}</b></div>
+     <div class="sub2"><span>${money2(R.sfBenchOverlay)}/sf asphalt · ${money2(R.sfBenchChip)}/sf chip</span><span>${benchDelta(r)}</span></div>
+     ${flags.map((f,i)=>`<div class="flag ${i===flags.length-1?cls:""}">${f}</div>`).join("")}`;
+
+  document.getElementById("peek").innerHTML =
+    `<span>${money(r.price)}</span><span class="m">${money2(r.price/r.totalSf)}/sf · ${r.margin.toFixed(0)}%</span>`;
+
+  const hh = document.getElementById("hourshint");
+  if(hh){
+    hh.innerHTML = r.ovHrs > 0
+      ? `Using <b>your ${r.ovHrs} hr</b> over ${r.days} day${r.days>1?"s":""}. We'd have guessed ${r.autoHrs.toFixed(1)} hr. Clear the box to go back to automatic.`
+      : `Working it out as <b>${r.autoHrs.toFixed(1)} hr</b> over ${r.days} day${r.days>1?"s":""}. If that's wrong, type the real number — it's the figure we're least sure of.`;
+  }
+  renderGap(r);
+  return r;
+}
+
+function renderGap(r){
+  const el = document.getElementById("gaphint"); if(!el) return;
+  const c = numv(state.charge);
+  if(!c || !r || r.totalSf <= 0){ el.textContent = ""; return; }
+  const d = c - r.price;
+  const pct = r.price > 0 ? Math.abs(d / r.price * 100) : 0;
+  if(Math.abs(d) < 1){ el.innerHTML = "Spot on."; return; }
+  const impl = c > 0 ? (c - r.cost) / c * 100 : 0;
+  const lead = d > 0
+    ? `You're <b>${money(Math.abs(d))} above</b> us — we're ${pct.toFixed(0)}% light on this one.`
+    : `You're <b>${money(Math.abs(d))} below</b> us — we're ${pct.toFixed(0)}% heavy on this one.`;
+  el.innerHTML = lead + ` At ${money(c)} you'd be running a <b>${impl.toFixed(0)}% margin</b> on our costs, against the ${r.tgt}% we defaulted to.`;
+}
+
+function syncSegs(){
+  document.querySelectorAll('.seg[data-k]').forEach(seg=>{
+    const k = seg.dataset.k;
+    seg.querySelectorAll("button").forEach(b=>{
+      const v = k === "verdict" ? b.dataset.v : parseFloat(b.dataset.v);
+      b.setAttribute("aria-pressed", String(state[k] === v));
+    });
+  });
+}
+
+function renderAll(){ renderAreas(); syncSegs(); renderResult(); }
+
+/* ---------- events ---------- */
+document.getElementById("areas").addEventListener("input", e=>{
+  const id = e.target.dataset.area, f = e.target.dataset.f;
+  if(!id || !f) return;
+  const a = state.areas.find(x=>x.id===id); if(!a) return;
+  a[f] = e.target.value;
+  const box = e.target.closest(".area");
+  const sf = areaSf(a);
+  box.querySelector(".sz").textContent = sf ? Math.round(sf).toLocaleString()+" sq ft" : "—";
+  const ro = box.querySelector('input[readonly]');
+  if(ro) ro.value = sf ? Math.round(sf).toLocaleString() : "";
+  renderResult(); save();
+});
+
+document.getElementById("areas").addEventListener("click", e=>{
+  const rm = e.target.dataset.rm;
+  if(rm){ state.areas = state.areas.filter(a=>a.id!==rm); renderAll(); save(); return; }
+  const btn = e.target.closest("button[data-v]"); if(!btn) return;
+  const seg = btn.parentElement, id = seg.dataset.area, f = seg.dataset.f;
+  if(!id || !f) return;
+  const a = state.areas.find(x=>x.id===id); if(!a) return;
+  a[f] = (f==="thick"||f==="lifts") ? parseFloat(btn.dataset.v) : btn.dataset.v;
+  renderAll(); save();
+});
+
+document.getElementById("resbody").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-m]"); if(!b) return;
+  const m = b.dataset.m;
+  state.margin = m === "reset" ? R.target
+    : Math.min(Math.max((numv(state.margin) || R.target) + parseInt(m,10), 1), 80);
+  renderResult(); save();
+});
+
+document.getElementById("addarea").addEventListener("click", ()=>{
+  state.areas.push(blankArea(state.areas.length+1)); renderAll(); save();
+});
+
+document.querySelectorAll('.seg[data-k]').forEach(seg=>{
+  seg.addEventListener("click", e=>{
+    const b = e.target.closest("button[data-v]"); if(!b) return;
+    const k = seg.dataset.k;
+    state[k] = k === "verdict" ? b.dataset.v : parseFloat(b.dataset.v);
+    syncSegs(); renderResult(); save();
+  });
+});
+
+["crack","baserep","drain","stripe","hours"].forEach(id=>{
+  const el = document.getElementById(id);
+  el.value = state[id];
+  el.addEventListener("input", ()=>{ state[id] = el.value; renderResult(); save(); });
+});
+[["joblabel","label"],["charge","charge"],["vnotes","vnotes"],["who","who"]].forEach(([id,k])=>{
+  const el = document.getElementById(id);
+  el.value = state[k] || "";
+  el.addEventListener("input", ()=>{ state[k] = el.value; if(k==="charge") renderGap(price()); save(); });
+});
+
+document.getElementById("newjob").addEventListener("click", ()=>{
+  if(!confirm("Clear this job and start a new one?")) return;
+  const who = state.who;
+  state = blankState(); state.who = who;
+  document.getElementById("joblabel").value = "";
+  document.getElementById("charge").value = "";
+  document.getElementById("vnotes").value = "";
+  ["crack","baserep","drain","stripe"].forEach(i=>document.getElementById(i).value = 0);
+  document.getElementById("hours").value = "";
+  state.margin = R.target;
+  document.getElementById("msg").hidden = true;
+  document.getElementById("send").disabled = false;
+  document.getElementById("send").textContent = "Send this job to Jason";
+  renderAll(); save(); window.scrollTo({top:0,behavior:"smooth"});
+});
+
+/* mobile rail */
+(function(){
+  const top = document.getElementById("restop"), body = document.getElementById("resbody"),
+        caret = document.getElementById("caret"), rail = document.getElementById("rail");
+  let open = false;
+  function apply(){
+    if(window.innerWidth > 1000){ body.hidden = false; return; }
+    body.hidden = !open; caret.textContent = open ? "▼" : "▲";
+  }
+  top.addEventListener("click", ()=>{ if(window.innerWidth>1000) return; open = !open; apply(); });
+  window.addEventListener("resize", apply); apply();
+  const isField = el => el && el.matches && el.matches("input,textarea");
+  document.addEventListener("focusin", e=>{ if(isField(e.target)) rail.classList.add("typing"); });
+  document.addEventListener("focusout", ()=>{ setTimeout(()=>{ if(!isField(document.activeElement)) rail.classList.remove("typing"); },120); });
+  document.addEventListener("wheel", e=>{
+    if(e.target.matches && e.target.matches('input[type=number]') && document.activeElement===e.target) e.target.blur();
+  }, {passive:true});
+})();
+
+/* send */
+function showMsg(html, err){
+  const m = document.getElementById("msg");
+  m.className = "msg" + (err ? " err" : ""); m.innerHTML = html; m.hidden = false;
+}
+document.getElementById("send").addEventListener("click", async ()=>{
+  const btn = document.getElementById("send");
+  const r = price();
+  if(r.totalSf <= 0){ showMsg("<b>Add an area first.</b>There's nothing to price yet.", true); return; }
+  if(!state.who.trim()){ showMsg("<b>Pop your name in.</b>Bottom of the page.", true); document.getElementById("who").focus(); return; }
+  if(!state.charge){ showMsg("<b>We need your number.</b>What would you have charged for this one? That's the whole reason for the test.", true); document.getElementById("charge").focus(); return; }
+
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = "Sending...";
+  try{
+    const res = await fetch(ENDPOINT, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        kind:"job_test", contact_name: state.who.trim(),
+        job_label: state.label || null,
+        areas: state.areas.map(a=>({name:a.name, sf:Math.round(areaSf(a)), treat:a.treat,
+                thick:a.thick, lifts:a.lifts, chip:a.chip})),
+        conditions:{access:state.access, slope:state.slope, surface:state.surface, complex:state.complex},
+        addons:{crack:numv(state.crack), baserep:numv(state.baserep), drain:numv(state.drain), stripe:numv(state.stripe)},
+        computed:{totalSf:Math.round(r.totalSf), material:Math.round(r.material), labor:Math.round(r.labor),
+                  equip:Math.round(r.equip), haul:Math.round(r.haul), addons:Math.round(r.addons),
+                  mult:+r.mult.toFixed(3), cost:Math.round(r.cost), margin:+r.margin.toFixed(1),
+                  hrs:+r.hrs.toFixed(1), hmaTons:+r.hmaTons.toFixed(1), aggTons:+r.aggTons.toFixed(1),
+                  belowMin:r.belowMin, shortLoad:r.shortLoad},
+        app_price: Math.round(r.price),
+        would_charge: numv(state.charge),
+        verdict: derivedVerdict(Math.round(r.price), numv(state.charge)),
+        hours_used: r.ovHrs > 0 ? r.ovHrs : null,
+        auto_hours: +r.autoHrs.toFixed(1),
+        bench_price: Math.round(r.bench),
+        margin_used: r.tgt,
+        implied_margin: numv(state.charge) > 0
+          ? +(((numv(state.charge) - r.cost) / numv(state.charge)) * 100).toFixed(1) : null,
+        notes: state.vnotes || null
+      })
+    });
+    if(!res.ok) throw new Error("status " + res.status);
+    state.sent = true; save();
+    btn.textContent = "Sent";
+    const diff = numv(state.charge) - r.price;
+    const pct = r.price > 0 ? Math.abs(diff / r.price * 100) : 0;
+    const verdict = Math.abs(diff) < 1 ? "spot on"
+      : (diff > 0 ? `<b>${money(Math.abs(diff))} low</b> (${pct.toFixed(0)}% under you)`
+                  : `<b>${money(Math.abs(diff))} high</b> (${pct.toFixed(0)}% over you)`);
+    showMsg(`<b>Got it. Thanks John.</b>We said ${money(r.price)}, you'd charge ${money(numv(state.charge))} — so we were ${verdict}. Hit <em>New job</em> up top to run another one. The more you send, the closer we get.`, false);
+  }catch(err){
+    btn.disabled = false; btn.textContent = orig;
+    showMsg("<b>That didn't send.</b>Check your signal and hit it again — nothing you typed is lost.", true);
+  }
+});
+
+renderAll();
+</script>
+</body>
+</html>
