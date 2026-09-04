@@ -105,6 +105,11 @@ label.lb{display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;lett
 .big .k{font-family:Archivo;font-size:12.5px;font-weight:600;color:var(--ink-2)}
 .big .v{font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .sub2{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);margin-top:6px}
+.dep{display:flex;align-items:center;gap:6px;margin-top:11px}
+.dep .dl{flex:1;font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.dep button{flex:0 0 56px;height:40px;background:var(--field);border:1px solid var(--line);color:var(--ink-2);font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;cursor:pointer;border-radius:0}
+.dep button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent-deep);color:var(--accent-ink)}
+.dep button:focus-visible{outline:2px solid var(--accent-deep);outline-offset:-2px}
 .marg{display:flex;align-items:center;gap:8px;margin-top:8px}
 .marg button{flex:0 0 44px;height:40px;background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;border-radius:0}
 .marg button:hover{border-color:var(--accent-deep)}
@@ -305,7 +310,7 @@ function blankArea(n){
 }
 function blankState(){
   return {label:"", areas:[blankArea(1)], access:1, slope:1, surface:1, complex:1,
-          crack:0, baserep:0, drain:0, stripe:0, hours:"", margin:28,
+          crack:0, baserep:0, drain:0, stripe:0, hours:"", margin:28, deposit:25,
           charge:"", vnotes:"", who:"", sent:false};
 }
 
@@ -465,6 +470,7 @@ function derivedVerdict(appPrice, charge){
 
 function renderResult(){
   const r = price();
+  const dep = [0,25,50].includes(+state.deposit) ? +state.deposit : 25;
   document.getElementById("totalsf") .textContent = Math.round(r.totalSf).toLocaleString() + " sq ft";
 
   if(r.totalSf <= 0){
@@ -500,7 +506,14 @@ function renderResult(){
      </div>
      <div class="sub2"><span>${money2(r.price/r.totalSf)} / sq ft</span><span>margin ${r.margin.toFixed(1)}%</span></div>
      <div class="sub2"><span>Won't go below (${R.floor}%)</span><span>${money(r.floorPrice)}</span></div>
-     <div class="sub2"><span>Deposit at ${R.deposit}%</span><span>${money(r.price*R.deposit/100)}</span></div>
+     <div class="dep">
+       <span class="dl">Deposit</span>
+       ${[0,25,50].map(d=>`<button type="button" data-dep="${d}" aria-pressed="${dep===d}">${d}%</button>`).join("")}
+     </div>
+     ${dep>0
+       ? `<div class="sub2"><span>Deposit to hold the date</span><span>${money(r.price*dep/100)}</span></div>
+          <div class="sub2"><span>Balance on completion</span><span>${money(r.price*(100-dep)/100)}</span></div>`
+       : `<div class="sub2"><span>No deposit</span><span>Paid in full on completion</span></div>`}
      <div class="bench"><span>Your usual rate lands at</span><b>${money(r.bench)}</b></div>
      <div class="sub2"><span>${money2(R.sfBenchOverlay)}/sf asphalt · ${money2(R.sfBenchChip)}/sf chip</span><span>${benchDelta(r)}</span></div>
      ${flags.map((f,i)=>`<div class="flag ${i===flags.length-1?cls:""}">${f}</div>`).join("")}`;
@@ -570,6 +583,8 @@ document.getElementById("areas").addEventListener("click", e=>{
 });
 
 document.getElementById("resbody").addEventListener("click", e=>{
+  const d = e.target.closest("button[data-dep]");
+  if(d){ state.deposit = parseInt(d.dataset.dep,10); renderResult(); save(); return; }
   const b = e.target.closest("button[data-m]"); if(!b) return;
   const m = b.dataset.m;
   state.margin = m === "reset" ? R.target
@@ -610,7 +625,7 @@ document.getElementById("newjob").addEventListener("click", ()=>{
   document.getElementById("vnotes").value = "";
   ["crack","baserep","drain","stripe"].forEach(i=>document.getElementById(i).value = 0);
   document.getElementById("hours").value = "";
-  state.margin = R.target;
+  state.margin = R.target; state.deposit = 25;
   document.getElementById("msg").hidden = true;
   document.getElementById("send").disabled = false;
   document.getElementById("send").textContent = "Send this job to Jason";
@@ -671,6 +686,7 @@ document.getElementById("send").addEventListener("click", async ()=>{
         auto_hours: +r.autoHrs.toFixed(1),
         bench_price: Math.round(r.bench),
         margin_used: r.tgt,
+        deposit_pct: [0,25,50].includes(+state.deposit) ? +state.deposit : 25,
         implied_margin: numv(state.charge) > 0
           ? +(((numv(state.charge) - r.cost) / numv(state.charge)) * 100).toFixed(1) : null,
         notes: state.vnotes || null
